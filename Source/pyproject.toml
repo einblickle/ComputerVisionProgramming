@@ -1,0 +1,12 @@
+[project]
+name = "VS_PYTHON"
+version = "1.2.3"
+# ...
+requires-python = ">=3.13" # This defines the compatible Python versions
+dependencies = [
+    "jupyter>=1.1.1",
+    "matplotlib>=3.10.3",
+    "numpy>=2.3.1",
+    "opencv-python>=4.11.0.86",
+    "plotly>=6.3.0",
+]

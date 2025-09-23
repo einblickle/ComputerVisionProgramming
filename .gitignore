@@ -1,0 +1,18 @@
+/.quarto/           # Quarto cache directory
+/_site/             # Default Quarto output directory for websites
+/_book/             # Output directory for books
+*.html              # Rendered HTML files (if not tracked)
+/*.pdf              # Rendered PDF files (if not tracked)
+/*.docx             # Rendered Word files (if not tracked)
+*.ipynb             # Jupyter notebooks (if generated, not source)
+/.Rhistory
+.RData
+.Rproj.user/
+.DS_Store
+*.log
+*.aux
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+/Output/

@@ -1,0 +1,17 @@
+*** Download Python 3 und install ***
+
+https://www.python.org/downloads/release/python-3135/
+
++ Pythion Installation registry Eintrag bestätigen und add to path
+
+*** Install uv ***
+
+pip install uv
+
+
+*** Install Visual Studio Code ***
+
+*** Install Extensions for Python and jupyter Notebook
+
+*** Select Pytho Interpreter Strg Shift P and Then Python: Select Interpreter
+
