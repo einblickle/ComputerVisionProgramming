@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import transforms3d as trafo3d
+
 
 
 # define grid
@@ -122,23 +122,6 @@ def rotation_matrix_x(alpha_degree):
 
 
 
-    if out is None:
-        data = numpy.array(data, dtype=numpy.float64, copy=True)
-        if data.ndim == 1:
-            data /= math.sqrt(numpy.dot(data, data))
-            return data
-    else:
-        if out is not data:
-            out[:] = numpy.array(data, copy=False)
-        data = out
-    length = numpy.atleast_1d(numpy.sum(data*data, axis))
-    numpy.sqrt(length, length)
-    if axis is not None:
-        length = numpy.expand_dims(length, axis)
-    data /= length
-    if out is None:
-        return data
-
 
 
 if __name__ == "__main__":
@@ -162,7 +145,7 @@ if __name__ == "__main__":
 
     
     intCamMat = getIntrinsicCameraCalibrationMatrix(10, 0,0)
-    angle =70
+    angle =90
     angleRad=np.deg2rad(angle)
     dist = 1000
     extCamMat = getExtrinsicCameraCalibrationMatrix(angle,0,0,0,0, dist)
