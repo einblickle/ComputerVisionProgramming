@@ -195,13 +195,13 @@ if __name__ == "__main__":
 
 
 
-    intCamMat = getIntrinsicCameraCalibrationMatrix(20, 2000,1500)
-    extCamMat = getExtrinsicCameraCalibrationMatrix(0,0,0,0,0, 480)
+    intCamMat = getIntrinsicCameraCalibrationMatrix(6667, 2000,1500)
+    extCamMat = getExtrinsicCameraCalibrationMatrix(0,30,0,0,20, 480)
     
     
     
 
-    p2 = np.array([[-50],[100],[-80],[1]])
+    p2 = np.array([[-20],[30],[-40],[1]])
 
     p1 = np.array([[0],[0],[0],[1]])
 
