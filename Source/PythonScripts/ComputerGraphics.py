@@ -58,8 +58,8 @@ def makeSpherePoints(center_x, center_y, center_z, radius):
 
 def getIntrinsicCameraCalibrationMatrix(focalLength, c_x, c_y):
     intCameraMatrix = np.array([
-        [focalLength, 0, 0, c_x],
-        [0, focalLength, 0, c_y],
+        [focalLength, 0, c_x, 0],
+        [0, focalLength, c_y, 0],
         [0,0,1,0]
         ])
     return intCameraMatrix
@@ -191,3 +191,18 @@ if __name__ == "__main__":
     plt.scatter(projectedPointsSphere3[0,:], projectedPointsSphere3[1,:], c='g', s=1)
     plt.scatter(projectedPt[0,:], projectedPt[1,:], c='r', s=4)
     plt.show()
+
+
+
+
+    intCamMat = getIntrinsicCameraCalibrationMatrix(20, 2000,1500)
+    extCamMat = getExtrinsicCameraCalibrationMatrix(0,0,0,0,0, 480)
+    
+    
+    
+
+    p2 = np.array([[-50],[100],[-80],[1]])
+
+    p1 = np.array([[0],[0],[0],[1]])
+
+    projectedPtHom = hom2Cart(intCamMat@extCamMat@p1)
