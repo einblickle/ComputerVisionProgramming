@@ -62,4 +62,19 @@ displayImageAndAllHist(image_whatIsThat_autocontrastSat, 'Autocontrast')
 
 
 imageEqualized = skimage.exposure.equalize_adapthist(image_landscape, clip_limit=0.3)
+imageEqualized = (imageEqualized*255).astype('uint8')
+
+
 displayImageAndAllHist(imageEqualized, 'imageEqualized')
+
+gaussImg = np.random.normal(loc = 125, scale= 50, size = (500,500))
+gaussImg = np.clip(gaussImg, 0,255).astype('uint8')
+
+image_baboon = cv2.imread(r'images/baboon.png', cv2.IMREAD_GRAYSCALE)
+image_cat = cv2.imread(r'images/cat_reference.png', cv2.IMREAD_GRAYSCALE)
+
+matched = skimage.exposure.match_histograms(image_baboon, image_cat)
+matched = np.clip(matched,0,255).astype('uint8')
+
+displayImageAndAllHist(matched, 'matched')
+displayImageAndAllHist(image_baboon, 'raw')
