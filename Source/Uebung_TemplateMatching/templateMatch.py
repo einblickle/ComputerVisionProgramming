@@ -100,4 +100,4 @@ img_noise = addTemplateToIMG(img_noise, template, 130, 162)
 template_match2 = templateMatching(img_noise, template)
 template_match = cv2.matchTemplate(img_noise, template, cv2.TM_SQDIFF)
 
-mask = template_match2<5000
+mask = template_match2<10
