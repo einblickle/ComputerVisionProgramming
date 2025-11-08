@@ -11,49 +11,18 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 import skimage
-
-testImg  = np.zeros((600,600)).astype('uint8')
-
-#circles
-cv2.circle(testImg, (100, 150), 50, 255, -1, cv2.FILLED)
-cv2.circle(testImg, (250, 150), 6, 255, -1, cv2.FILLED)
-cv2.circle(testImg, (400, 150), 20, 255, -1, cv2.FILLED)
-
-#points
-testImg[150, 200] = 255
-testImg[150, 325] = 255
-
-#lines
-cv2.line(testImg, (100, 310), (100, 390), 255, 4, cv2.LINE_8)
-cv2.line(testImg, (60, 350), (140, 350), 255, 4, cv2.LINE_8)
-
-cv2.line(testImg, (200, 410), (200, 490), 255, 1, cv2.LINE_8)
-cv2.line(testImg, (160, 450), (240, 450), 255, 1, cv2.LINE_8)
-
-cv2.line(testImg, (370, 320), (430, 370), 255, 1, cv2.LINE_8)
-cv2.line(testImg, (370, 370), (430, 320), 255, 1, cv2.LINE_8)
-
-cv2.line(testImg, (470, 320), (530, 370), 255, 2, cv2.LINE_8)
-cv2.line(testImg, (470, 370), (530, 320), 255, 2, cv2.LINE_8)
-
-cv2.line(testImg, (370, 470), (430, 520), 255, 3, cv2.LINE_8)
-cv2.line(testImg, (370, 520), (430, 470), 255, 3, cv2.LINE_8)
-
-
-
-
-
+import scipy
 
 # Bilddatei einladen
 img_air = cv2.imread(r'images/airfield02g.png', cv2.IMREAD_GRAYSCALE)
 img_bricks = cv2.imread(r'images/bricks.jpg', cv2.IMREAD_GRAYSCALE)
 img_test = cv2.imread(r'images/testpattern.bmp', cv2.IMREAD_GRAYSCALE)
 img_road = cv2.imread(r'images/road2.jpg', cv2.IMREAD_GRAYSCALE)
-
+img_houses = cv2.imread(r'images/houses.bmp', cv2.IMREAD_GRAYSCALE)
 # select image to analyze
 
-image = img_test
-image_f = image.astype('float64')
+image = img_houses
+image_f = image.astype('float32')
 
 ## Blurring / Gaussian Blur / Flat Top
 
@@ -78,11 +47,11 @@ image_smoothed = cv2.GaussianBlur(image_f, (11,11), 5)
 image_smoothed = image_f
 
 
-kernelSobelX = np.array([[-1,0,1],[-2,0,2],[-1,0,1]], np.float64)
+kernelSobelX = np.array([[-1,0,1],[-2,0,2],[-1,0,1]], np.float32)
 sobelX = cv2.filter2D(image_smoothed, -1, kernelSobelX)
 
 
-kernelSobelY = np.array([[-1,-2,-1],[0,0,0],[1,2,1]],np.float64)
+kernelSobelY = np.array([[-1,-2,-1],[0,0,0],[1,2,1]],np.float32)
 sobelY = cv2.filter2D(image_smoothed, -1, kernelSobelY)
 
 # combine the directions (Pythagoras)
@@ -94,17 +63,18 @@ sobelY =  cv2.normalize(sobelY, None, 0, 255, cv2.NORM_MINMAX).astype('uint8')
 edges_sobel =  cv2.normalize(edges_sobel, None, 0, 255, cv2.NORM_MINMAX).astype('uint8')
 
 
-#Bild Schärfen:
+#Filter Testen
 
 
-kernel = np.array([[1,1,1],[1,-8,1],[1,1,1]]).astype('float64')
+kernel = np.array([[-1,-1,-1],[-1,12,-1],[-1,-1,-1]]).astype('float32')
+kernel = np.array([[0,-1,0],[-1,4,-1],[0,-1,0]]).astype('float32')
+#kernel = np.ones((3,3)).astype('float32')
+#kernel = (1/np.sum(kernel))*kernel
 
 
 # apply
-laplace = cv2.filter2D(image_smoothed, -1, kernel)
-laplace_skimage = skimage.filters.laplace(image_smoothed, ksize=5)
-laplace_OpenCV = cv2.Laplacian(image_smoothed, cv2.CV_64F, 3)
-# scale the image back to uint8
-laplace2 = cv2.normalize(np.abs(laplace), None, 0, 255, cv2.NORM_MINMAX).astype('uint8')
-
-
+filtered = cv2.filter2D(image_f, -1, kernel)
+#filtered = cv2.normalize(np.abs(filtered), None, 0, 255, cv2.NORM_MINMAX).astype('uint8')
+#filtered = np.clip(filtered,0, 255). astype('uint8')
+#filtered = cv2.normalize(filtered, None, 0, 255, cv2.NORM_MINMAX).astype('uint8')
+SKLaplace = skimage.filters.laplace(image_f, 3)
