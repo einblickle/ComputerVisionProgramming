@@ -60,7 +60,13 @@ template=np.array([
     [128,128,255,128,128],
     [0,255,0,255,0],
     [255,128,0,128,255]])
+
 template = template.astype('uint8')
+
+template2 = (0.7*template).astype('uint8')
+
+
+
 
 #img_noise[100:105,100:105] = template
 img_noise = addTemplateToIMG(img_noise, template, 31, 31)
@@ -94,8 +100,9 @@ img_noise = addTemplateToIMG(img_noise, template, 130, 162)
 
 #template_match = template_match > 220
 
-#cv2.imwrite(r'template.bmp', template)
-#cv2.imwrite(r'img_noise.bmp', img_noise)
+cv2.imwrite(r'template.bmp', template)
+cv2.imwrite(r'template2.bmp', template2)
+cv2.imwrite(r'img_noise.bmp', img_noise)
 
 template_match2 = templateMatching(img_noise, template)
 template_match = cv2.matchTemplate(img_noise, template, cv2.TM_SQDIFF)
