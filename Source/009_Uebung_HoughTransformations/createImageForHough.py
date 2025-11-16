@@ -61,7 +61,7 @@ def create_circle_grid_image(img_size=800, grid_size=5, standard_diameter=100,
 
 
 # Generiere das Bild
-binary_image = create_circle_grid_image(
+circle_image = create_circle_grid_image(
     img_size=1000, 
     grid_size=5, 
     standard_diameter=100,
@@ -70,22 +70,25 @@ binary_image = create_circle_grid_image(
     line_thickness=-1
 )
 
-print(f"Bildgröße: {binary_image.shape}")
-print(f"Datentyp: {binary_image.dtype}")
-print(f"Min/Max Werte: {binary_image.min()}/{binary_image.max()}")
+print(f"Bildgröße: {circle_image.shape}")
+print(f"Datentyp: {circle_image.dtype}")
+print(f"Min/Max Werte: {circle_image.min()}/{binary_image.max()}")
 
-binary_image = skimage.util.random_noise(binary_image, mode='speckle', mean=0.1)
-binary_image = (binary_image*255).astype('uint8')
+circle_image = skimage.util.random_noise(circle_image, mode='speckle', mean=0.1)
+circle_image = (circle_image*255).astype('uint8')
 
-binary_image = binary_image
 
-test = skimage.feature.canny(binary_image, sigma=3)
+
+test = skimage.feature.canny(circle_image, sigma=3)
 
 # Zeige das Bild mit Matplotlib
 fig, ax = plt.subplots(1, 1, figsize=(8, 8))
-ax.imshow(binary_image, cmap='gray', vmin=0, vmax=255)
+ax.imshow(circle_image, cmap='gray', vmin=0, vmax=255)
 ax.set_title('Binärbild mit 25 Kreisen (5×5 Gitter)\nEin Kreis ist größer, ein Kreis ist kleiner')
 ax.axis('off')
 plt.tight_layout()
 plt.show()
 
+# export des Bildes
+
+cv2.imwrite(r'circles.png', circle_image)
