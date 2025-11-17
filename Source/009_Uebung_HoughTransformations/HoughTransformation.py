@@ -111,3 +111,21 @@ for posX, posY in zip(maxIndex45_Y, maxIndex45_X):
         
 fig.update_shapes(dict(xref='x', yref='y'))
 fig.show()
+
+
+## create circle coordinates and draw line directly into image
+
+rr, cc  = skimage.draw.circle_perimeter(maxIndex45_Y[0], maxIndex45_X[0], 45)
+
+img_rgb = skimage.color.gray2rgb(img)
+img_rgb[rr,cc,:]=[127,255,0]
+
+fig = px.imshow(
+    img_rgb, 
+    title="Plotly Express Image Display (px.imshow)",
+    # Optional: Adjust the aspect ratio of the plot
+    aspect="equal",
+    color_continuous_scale='rgb'
+)
+
+fig.show()
