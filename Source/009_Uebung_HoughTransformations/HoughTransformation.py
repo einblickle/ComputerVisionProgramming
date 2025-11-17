@@ -14,7 +14,7 @@ def createCircleImage(radius):
     img[rr,cc] = 1
 
     return img.astype('int')
-
+'''
 def calculateCircAccumulator(image, radius):
     
     template = createCircleImage(radius)
@@ -28,19 +28,42 @@ def calculateCircAccumulator(image, radius):
         accumulator[row-halfWidth:row+halfWidth+1,col-halfWidth:col+halfWidth+1] += template
         
     return accumulator
+'''
+
+def calculateCircAccumulator(img_edges, img_circ):
+    
+    
+    halfWidth = img_circ.shape[0]//2
+    accumulator = np.zeros(img_edges.shape).astype('int')
+
+    indices = np.where(img_edges ==1)
+    for row, col in zip(*indices):
+        accumulator[row-halfWidth:row+halfWidth+1,col-halfWidth:col+halfWidth+1] += img_circ
+        
+    return accumulator
 
 
 
 
 
 img = cv2.imread(r'images/circles.png', cv2.IMREAD_GRAYSCALE)
+img_edges = skimage.feature.canny(img, sigma=2)
+
+
 circRadius = 50
+img_circ = createCircleImage(circRadius)
+accumulator = calculateCircAccumulator(img_edges, img_circ)
+maxIndex50_Y, maxIndex50_X = np.where(accumulator >= 0.9*np.max(accumulator))
 
-accumulator = calculateCircAccumulator(img, circRadius)
+circRadius = 55
+img_circ = createCircleImage(circRadius)
+accumulator = calculateCircAccumulator(img_edges, img_circ)
+maxIndex55_Y, maxIndex55_X = np.where(accumulator >= 0.9*np.max(accumulator))
 
-maxIndex_Y, maxIndex_X = np.where(accumulator >= 0.9*np.max(accumulator))
-
-
+circRadius = 45
+img_circ = createCircleImage(circRadius)
+accumulator = calculateCircAccumulator(img_edges, img_circ)
+maxIndex45_Y, maxIndex45_X = np.where(accumulator >= 0.9*np.max(accumulator))
 
 
 fig = px.imshow(
@@ -50,7 +73,20 @@ fig = px.imshow(
     aspect="equal",
     color_continuous_scale='gray'
 )
-for posX, posY in zip(maxIndex_Y, maxIndex_X):
+
+circRadius = 50
+for posX, posY in zip(maxIndex50_Y, maxIndex50_X):
+    fig.add_shape(type="circle",
+        x0=posX-circRadius,
+        y0=posY-circRadius,
+        x1=posX+circRadius,
+        y1=posY+circRadius,
+        line=dict(
+            color="Chartreuse",
+            width=4))
+
+circRadius = 55
+for posX, posY in zip(maxIndex55_Y, maxIndex55_X):
     fig.add_shape(type="circle",
         x0=posX-circRadius,
         y0=posY-circRadius,
@@ -58,9 +94,20 @@ for posX, posY in zip(maxIndex_Y, maxIndex_X):
         y1=posY+circRadius,
         line=dict(
             color="Red",
-            width=4,
-        ),
+            width=4))
+
+circRadius = 45
+for posX, posY in zip(maxIndex45_Y, maxIndex45_X):
+    fig.add_shape(type="circle",
+        x0=posX-circRadius,
+        y0=posY-circRadius,
+        x1=posX+circRadius,
+        y1=posY+circRadius,
+        line=dict(
+            color="Cyan",
+            width=4))
+
+
         
-    )
 fig.update_shapes(dict(xref='x', yref='y'))
 fig.show()
