@@ -6,91 +6,48 @@ import skimage
 
 
 
-center = (1686, 1500)
-radius = 1300
+center = (1659, 1506)
+radius = 1280
 
 image = cv2.imread(r'registration_full.tiff', cv2.IMREAD_ANYDEPTH)
-
-
-
-
-
-mask = np.ones(image.shape) * 20
-mask = cv2.circle(mask, center = center, radius = radius, color = (255,255,255), thickness = -1)
+mask = np.zeros(image.shape)
+bkg = np.ones(image.shape).astype('uint16')*12000
+mask = cv2.circle(mask, center = center, radius = radius, color = (1,1,1), thickness = -1)
 mask = cv2.blur(mask, (51, 51))
 mask = cv2.blur(mask, (51, 51))
-
-
 mask = cv2.normalize(mask, None, 0, 1, cv2.NORM_MINMAX).astype('float')
+maskedImage = image * mask + (1-mask)*bkg
 
-maskedImage = image * mask
+maskedImage = maskedImage[200:2841, 330:2971]
 
+# cover marks
+
+maskedImage[1286:(1286+30), 1341:(1341+30)]=maskedImage[1200:(1200+30), 1499:(1499+30)]
+
+maskedImage[1099:(1099+30), 1343:(1343+30)]=maskedImage[1200:(1200+30), 1499:(1499+30)]
+
+maskedImage[1285:(1285+30), 1931:(1931+30)]=maskedImage[1200:(1200+30), 1499:(1499+30)]
+
+
+
+
+
+
+
+## ROI
+
+maskedImage_16Bit = cv2.normalize(maskedImage, None, 0, (2**16)-1, cv2.NORM_MINMAX).astype('uint16')
+cv2.imwrite(r'registrationImage_16Bit.png', maskedImage_16Bit)
 
 maskedImage = cv2.normalize(maskedImage, None, 0, 255, cv2.NORM_MINMAX).astype('uint8')
-maskedImage = cv2.medianBlur(maskedImage,3)
+
+cv2.imwrite(r'registrationImage_8Bit.png', maskedImage)
 
 
-# Global Threshold
-disk = skimage.morphology.disk(71)
+# export image
+image = cv2.imread(r'ConcCircTest.tiff', cv2.IMREAD_ANYDEPTH)
+image_16Bit = cv2.normalize(image, None, 0, (2**16)-1, cv2.NORM_MINMAX).astype('uint16')
+cv2.imwrite(r'concCirc_16Bit.png', image_16Bit)
 
-min_image = skimage.filters.rank.minimum(maskedImage, disk)
-max_image = skimage.filters.rank.maximum(maskedImage, disk)
-
-normalImage = (maskedImage-min_image) / (max_image+1)*255
-thx = normalImage>50
-
-
-
-
-# canny Filering
-canny_filtered = skimage.feature.canny(maskedImage, sigma=2)
-dilated = skimage.morphology.binary_dilation(canny_filtered, np.ones((5,5)))
-
-eroded = skimage.morphology.binary_erosion(dilated, np.ones((5,5)))
-
-skeleton = skimage.morphology.skeletonize(eroded)
-
-radii = np.array([8, 25, 43])
-radii = np.array([8])
-H = skimage.transform.hough_circle(skeleton, radii)
-
-accum, cx, cy, rad = skimage.transform.hough_circle_peaks(H, [radii, ] )
-
-
-# local adaptive threshold
-block_size = 151
-local_thresh = skimage.filters.threshold_local(normalImage, block_size, offset=-20)
-binary_local = normalImage > local_thresh
-skeleton2 = skimage.morphology.skeletonize(binary_local)
-
-
-'''
-
-min_image_b = cv2.blur(min_image, (21,21))
-#bkg_corr_blur = cv2.GaussianBlur(bkg_corr,(9,9), 3)
-
-bkg_corr_blur = cv2.medianBlur(bkg_corr, 3)
-
-laplace_filtered = skimage.filters.laplace(bkg_corr_blur, ksize=7)
-
-canny_filtered = skimage.feature.canny(bkg_corr_blur, sigma=1)
-
-bkg_corr_blur_thx = bkg_corr_blur>20
-
-bkg_corr_skeleton = skimage.morphology.skeletonize(bkg_corr_blur_thx)
-
-
-
-img_8bit = cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX).astype('uint8')
-
-radius = 25
-footprint = skimage.morphology.disk(radius)
-
-local_otsu = skimage.filters.rank.otsu(img_8bit, footprint)
-thx = img_8bit>=local_otsu
-
-
-block_size = 151
-local_thresh = skimage.filters.threshold_local(img_8bit, block_size, offset=-20)
-binary_local = img_8bit > local_thresh
-'''
+image_8Bit = cv2.normalize(image, None, 0, (2**8)-1, cv2.NORM_MINMAX).astype('uint8')
+cv2.imwrite(r'concCirc_8Bit.png', image_8Bit)
