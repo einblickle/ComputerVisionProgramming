@@ -145,13 +145,3 @@ for center_y, center_x, radius in zip(cy1, cx1, radii1):
 ## all in one
 ####
 
-hough_radii = np.array([44,26,8])
-hough_res = skimage.transform.hough_circle(skeleton, hough_radii)
-accums1, cx1, cy1, radii1 = skimage.transform.hough_circle_peaks(hough_res,
-                                                                    hough_radii,
-                                                                    min_xdistance = 70,
-                                                                    min_ydistance = 70,
-                                                                    threshold = 0,
-                                                                    num_peaks=255)
-                                                                    
-    
