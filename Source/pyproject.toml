@@ -2,7 +2,7 @@
 name = "VS_PYTHON"
 version = "1.2.3"
 # ...
-requires-python = "==3.13" # This defines the compatible Python versions
+requires-python = ">=3.13,<3.14" # This defines the compatible Python versions
 dependencies = [
     "ipykernel>=7.0.1",
     "ipympl>=0.9.8",
