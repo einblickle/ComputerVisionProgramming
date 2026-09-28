@@ -61,3 +61,37 @@ def displayHistogram(image, title = 'Bild', height=500, width=500):
     axs.set_box_aspect(1)
     plt.tight_layout()
     return
+
+
+def displayImageAndHist(image, title = 'Bild'):
+    """Display a grayscale image with its histogram.
+
+    Parameters:
+    - image (numpy.ndarray): uint8 image, grayscale
+    - title (str): Plot title.
+    """
+
+    histo, edges = np.histogram(image, bins=256, range=(0, 256))
+    cumHisto = np.cumsum(histo)
+    
+    # Matplotlib Plot mit Bild und Histogramm
+    fig, axs = plt.subplots(1, 2, figsize=(15, 4), gridspec_kw={'width_ratios': [1, 2]})
+
+    # Bild anzeigen
+    axs[0].imshow(image, cmap='gray', vmin=0, vmax=255)
+    axs[0].set_title(title)
+    axs[0].axis('off')
+
+    # Histogramm
+    axs[1].bar(range(len(histo)), histo, width = 1.0)
+    axs[1].set_title('Histogramm')
+    axs[1].set_xlabel('Grauwert', fontsize = 25)
+    axs[1].set_ylabel('Anzahl', fontsize = 25)
+    axs[1].tick_params(axis='both', which='major', labelsize=22)
+    
+    # Remove the y numbering (tick labels)
+    axs[1].set_yticklabels([])
+
+
+    plt.tight_layout()
+    plt.show()

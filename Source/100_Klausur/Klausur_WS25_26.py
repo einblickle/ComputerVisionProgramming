@@ -16,6 +16,8 @@ img_Malamute = cv2.imread(r'images/malamute.png', cv2.IMREAD_ANYDEPTH)
 img_airfield = cv2.imread(r'images/airfield.tif', cv2.IMREAD_ANYDEPTH)
 img_fruits = cv2.imread(r'./images/fruits.png', cv2.IMREAD_COLOR)
 img_fruits = cv2.cvtColor(img_fruits, cv2.COLOR_BGR2RGB)
+img_ireland = cv2.imread(r'./images/ireland.tif', cv2.IMREAD_ANYDEPTH)
+img_Haus = cv2.imread(r'./images/haus_Adjusted.jpg', cv2.IMREAD_ANYDEPTH)
 
 
 
@@ -34,7 +36,10 @@ plotting.displayImageAndAllHist(img, title = 'Bild')
 plotting.displayImageAndAllHist(img_airfield, title = 'Bild')
 plotting.displayImageAndAllHist(img_Malamute, title = 'Bild')
 plotting.displayImageAndAllHist(img_landscape, title = 'Bild')
+plotting.displayImageAndHist(img_Haus, title = 'Bild')
+plotting.displayImageAndHist(img_ireland, title = 'Bild')
 
 plotting.displayHistogram(img_landscape, title = 'Histogramm I')
 plotting.displayHistogram(img_Malamute, title = 'Histogramm III')
 plotting.displayHistogram(img, title = 'Histogramm II')
+displayImageAndHist
