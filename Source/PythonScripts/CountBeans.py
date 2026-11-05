@@ -40,9 +40,22 @@ def calculateAllCentroids(imageLabeled):
 
 
 
+def getElipticity(imageLabeled):
+    
+    noOfRegions = np.max(imageLabeled)
+    elipticityOfRegion = np.zeros(noOfRegions+1)
+    regions = skimage.measure.regionprops(imageLabeled)
+    for regionId in range(noOfRegions):
+        reg = regions[regionId]
+        major_axis = reg.major_axis_length
+        minor_axis = reg.minor_axis_length
+        ellipticity = 1.0 - (minor_axis / major_axis) if major_axis > 0 else 0.0
+        elipticityOfRegion[regionId+1] = ellipticity
+    return elipticityOfRegion
 
-#img = skimage.io.imread(r'img/beans/beansMixed2.jpg', False)
-img = skimage.io.imread(r'img/beans/many6.jpg', False)
+
+#img = skimage.io.imread(r'img/beans/AllBeans1.jpg', False)
+img = skimage.io.imread(r'img/beans/many1.jpg', False)
 
 fig = px.imshow(img)
 fig.show()
@@ -50,6 +63,7 @@ fig.show()
 
 
 # preprocess image Gaussian blur
+img_in = img
 img = uniform_filter(img, size=(25, 25, 1))
 
 
@@ -90,23 +104,30 @@ img_val = img_hsv[:,:,2]
 # filter hue sat Value
 
 hue_low = 70
-hue_high = 120
+hue_high = 105
 
-sat_low = 127
+sat_low = 200
 sat_high = 255
 
-val_low = 125
-val_high = 255
+val_low = 0
+val_high = 0
 
 
-mask_hue = 1-((img_hsv[:,:,0]>=hue_low)&(hue_high>=img_hsv[:,:,0]))
+mask_hue = ((img_hsv[:,:,0]>=hue_low)&(hue_high>=img_hsv[:,:,0]))
 
-mask_sat = 1-((img_hsv[:,:,1]>=sat_low)&(sat_high>=img_hsv[:,:,1]))
+mask_sat = ((img_hsv[:,:,1]>=sat_low)&(sat_high>=img_hsv[:,:,1]))
+
+mask_val = ((img_hsv[:,:,2]>=val_low)&(val_high>=img_hsv[:,:,2]))
 
 
 
-mask = mask_hue
+mask = 1-(mask_hue | mask_sat | mask_val)
 mask=mask.astype('uint8')
+
+footprint = skimage.morphology.disk(5)
+mask = skimage.morphology.opening(mask, footprint)
+mask = skimage.morphology.closing(mask, footprint)
+
 
 fig = px.imshow(mask)
 fig.show()
@@ -121,7 +142,7 @@ distance = scipy.ndimage.distance_transform_edt(mask > 0)
 
 # 2. Lokale Maxima (Kerne der getrennten Objekte) finden
 coords = skimage.feature.peak_local_max(distance, footprint=np.ones((3, 3)),threshold_abs
-                                                                            =70, min_distance=170, labels = mask )
+                                                                            =70, min_distance=200, labels = mask )
 markers_mask = np.zeros(distance.shape, dtype=bool)
 markers_mask[tuple(coords.T)] = True
 markers, _ = scipy.ndimage.label(markers_mask)
@@ -136,12 +157,21 @@ centerOfRegions = calculateAllCentroids(labels)
 # Jetzt will man die Bohnensorte abtrennen.
 avIntInRegion = getAverageIntensityValue(img_hsv[:,:,2],labels)
 
-isBeanRed = avIntInRegion<140
 
+# Ellitizität der Bereiche bestimmen
+ellipticityInRegion = getElipticity(labels)
 
+isRegionDark = avIntInRegion<140
+isRegionBright = avIntInRegion >140
+isRegionRound = ellipticityInRegion < 0.35
 
-posBeanRed = centerOfRegions[isBeanRed==True,:]
-posBeansNotRed = centerOfRegions[isBeanRed==False,:]
+isRedBean = isRegionDark
+isWhiteBean = isRegionBright & (~isRegionRound)
+isChickpea = isRegionBright & isRegionRound
+
+posBeanRed = centerOfRegions[isRedBean,:]
+posBeanWhite = centerOfRegions[isWhiteBean,:]
+posChickpea = centerOfRegions[isChickpea,:]
 
 # Show original image with overlay
 fig = px.imshow(img_hue)
@@ -160,10 +190,51 @@ fig.add_trace(
 
 fig.add_trace(
     go.Scatter(
-        x=posBeansNotRed[:,1],
-        y=posBeansNotRed[:,0],
+        x=posBeanWhite[:,1],
+        y=posBeanWhite[:,0],
         mode='markers+text',
         marker=dict(size=14, color='blue', symbol='cross'),
+        textposition='top center',
+        name='Schwerpunkte'
+    )
+)
+
+
+fig.show()
+
+
+# Show original image with overlay
+fig = px.imshow(img_in)
+# 3. Das Overlay als Scatter-Trace hinzufügen
+fig.add_trace(
+    go.Scatter(
+        x=posBeanRed[:,1],
+        y=posBeanRed[:,0],
+        mode='markers+text',
+        marker=dict(size=14, color='red', symbol='cross'),
+        textposition='top center',
+        name='Schwerpunkte'
+    )
+)
+
+
+fig.add_trace(
+    go.Scatter(
+        x=posBeanWhite[:,1],
+        y=posBeanWhite[:,0],
+        mode='markers+text',
+        marker=dict(size=14, color='blue', symbol='star'),
+        textposition='top center',
+        name='Schwerpunkte'
+    )
+)
+
+fig.add_trace(
+    go.Scatter(
+        x=posChickpea[:,1],
+        y=posChickpea[:,0],
+        mode='markers+text',
+        marker=dict(size=14, color='green', symbol='cross'),
         textposition='top center',
         name='Schwerpunkte'
     )
