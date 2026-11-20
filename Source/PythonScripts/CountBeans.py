@@ -22,40 +22,43 @@ def repeatErosion(img, repetitions):
     return eroded
 
 def getAverageIntensityValue(image, mask):
-    regionAV = np.zeros(np.max(mask)+1)
-    for region in range(np.max(mask)+1):
+    noOfRegions = np.max(mask)+1
+    regionAV = np.zeros(noOfRegions-1)
+    for region in range(1,noOfRegions):
         mean = np.mean(image[mask == region])
-        regionAV[region] = mean
+        regionAV[region-1] = mean
     return regionAV
 
 def calculateAllCentroids(imageLabeled):
 
     # iterate over all regions
     noOfRegions = np.max(imageLabeled)+1
-    centerOfRegions = np.zeros((noOfRegions, 2))
-    for regionId in range(noOfRegions):
+    centerOfRegions = np.zeros((noOfRegions-1, 2))
+    for regionId in range(1, noOfRegions):
         centroid = skimage.measure.centroid(imageLabeled == regionId)
-        centerOfRegions[regionId,:] = centroid
+        centerOfRegions[regionId-1,:] = centroid
     return centerOfRegions
 
 
 
 def getElipticity(imageLabeled):
     
-    noOfRegions = np.max(imageLabeled)
-    elipticityOfRegion = np.zeros(noOfRegions+1)
+    noOfRegions = np.max(imageLabeled)+1
+    elipticityOfRegion = np.zeros(noOfRegions-1)
     regions = skimage.measure.regionprops(imageLabeled)
-    for regionId in range(noOfRegions):
-        reg = regions[regionId]
+    for regionId in range(1, noOfRegions):
+        reg = regions[regionId-1]
         major_axis = reg.major_axis_length
         minor_axis = reg.minor_axis_length
         ellipticity = 1.0 - (minor_axis / major_axis) if major_axis > 0 else 0.0
-        elipticityOfRegion[regionId+1] = ellipticity
+        elipticityOfRegion[regionId-1] = ellipticity
     return elipticityOfRegion
 
 
-#img = skimage.io.imread(r'img/beans/AllBeans1.jpg', False)
-img = skimage.io.imread(r'img/beans/many1.jpg', False)
+#img = skimage.io.imread(r'img/beans/KidneyBeans.jpg', False)
+#img = skimage.io.imread(r'img/beans/Kichererbsen.jpg', False)
+img = skimage.io.imread(r'img/beans/AllBeans1.jpg', False)
+#img = skimage.io.imread(r'img/beans/many2.jpg', False)
 
 fig = px.imshow(img)
 fig.show()
@@ -103,25 +106,28 @@ img_val = img_hsv[:,:,2]
 
 # filter hue sat Value
 
-hue_low = 70
+
+
+#hue_low = 70
+hue_low = 20
 hue_high = 105
 
 sat_low = 200
 sat_high = 255
 
-val_low = 0
-val_high = 0
+val_low = 40
+val_high = 255
 
 
-mask_hue = ((img_hsv[:,:,0]>=hue_low)&(hue_high>=img_hsv[:,:,0]))
+mask_hue = 1-((img_hsv[:,:,0]>hue_low)&(img_hsv[:,:,0]<hue_high))
 
-mask_sat = ((img_hsv[:,:,1]>=sat_low)&(sat_high>=img_hsv[:,:,1]))
+mask_sat = 1-((img_hsv[:,:,1]>sat_low)&(img_hsv[:,:,1]<sat_high))
 
 mask_val = ((img_hsv[:,:,2]>=val_low)&(val_high>=img_hsv[:,:,2]))
 
 
 
-mask = 1-(mask_hue | mask_sat | mask_val)
+mask =(mask_hue & mask_sat & mask_val)
 mask=mask.astype('uint8')
 
 footprint = skimage.morphology.disk(5)
@@ -141,8 +147,8 @@ kernel = skimage.morphology.disk(5)
 distance = scipy.ndimage.distance_transform_edt(mask > 0)
 
 # 2. Lokale Maxima (Kerne der getrennten Objekte) finden
-coords = skimage.feature.peak_local_max(distance, footprint=np.ones((3, 3)),threshold_abs
-                                                                            =70, min_distance=200, labels = mask )
+coords = skimage.feature.peak_local_max(distance, footprint=np.ones((155, 155)),threshold_abs
+                                                                            =50, min_distance=150, labels = mask )
 markers_mask = np.zeros(distance.shape, dtype=bool)
 markers_mask[tuple(coords.T)] = True
 markers, _ = scipy.ndimage.label(markers_mask)
@@ -212,11 +218,11 @@ fig.add_trace(
         y=posBeanRed[:,0],
         mode='markers+text',
         marker=dict(size=14, color='red', symbol='cross'),
-        textposition='top center',
-        name='Schwerpunkte'
+        textposition='middle center',
+        name='Kidney-Bohne',
+        showlegend = True
     )
 )
-
 
 fig.add_trace(
     go.Scatter(
@@ -224,8 +230,9 @@ fig.add_trace(
         y=posBeanWhite[:,0],
         mode='markers+text',
         marker=dict(size=14, color='blue', symbol='star'),
-        textposition='top center',
-        name='Schwerpunkte'
+        textposition='middle center',
+        name='Weiße-Bohne',
+        showlegend = True
     )
 )
 
@@ -235,8 +242,19 @@ fig.add_trace(
         y=posChickpea[:,0],
         mode='markers+text',
         marker=dict(size=14, color='green', symbol='cross'),
-        textposition='top center',
-        name='Schwerpunkte'
+        textposition='middle center',
+        name='Kichererbse',
+        showlegend = True
+    )
+)
+
+fig.update_layout(
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="center",
+        x=0.5,
     )
 )
 
