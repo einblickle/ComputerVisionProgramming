@@ -55,6 +55,30 @@ def getElipticity(imageLabeled):
     return elipticityOfRegion
 
 
+
+def buildFeatureVector(image, imageLabeled):
+    ellipticityInRegion = getElipticity(imageLabeled)
+    avIntInRegion = getAverageIntensityValue(image, imageLabeled)
+    featureVector = np.hstack((avIntInRegion_scaled[:,np.newaxis], ellipticityInRegion[:,np.newaxis]))
+    return featureVector
+    
+    
+
+
+
+def getSorte(featReference, featureVector):
+    row, col = featureVector.shape
+    whatKindOfBean = np.zeros((row))*np.nan
+    for region in range(row):
+        diff = featReference-featureVector[region,:]
+        distance = np.linalg.norm(diff, axis=1)
+        objectNumber = np.argmin(distance)
+        whatKindOfBean[region] = objectNumber
+    return whatKindOfBean
+
+
+
+
 #img = skimage.io.imread(r'img/beans/KidneyBeans.jpg', False)
 #img = skimage.io.imread(r'img/beans/Kichererbsen.jpg', False)
 img = skimage.io.imread(r'img/beans/AllBeans1.jpg', False)
@@ -267,7 +291,12 @@ fig.show()
 ## build featureVector
 
 avIntInRegion_scaled = avIntInRegion/255
-featureVector = np.hstack((avIntInRegion_scaled[:,np.newaxis], ellipticityInRegion[:,np.newaxis]))
+featureVector2 = np.hstack((avIntInRegion_scaled[:,np.newaxis], ellipticityInRegion[:,np.newaxis]))
+
+featureVector = buildFeatureVector(img_hsv[:,:,2], labels)
+
+
+
 
 featureBean = np.array([0.3, 0.5])
 featureWhiteBean = np.array([0.8, 0.5])
@@ -285,15 +314,7 @@ distance = np.linalg.norm(diff, axis=1)
 
 objectNumber = np.argmin(distance)
 
-def getSorte(featReference, featureVector):
-    row, col = featureVector.shape
-    whatKindOfBean = np.zeros((row))*np.nan
-    for region in range(row):
-        diff = featReference-featureVector[region,:]
-        distance = np.linalg.norm(diff, axis=1)
-        objectNumber = np.argmin(distance)
-        whatKindOfBean[region] = objectNumber
-    return whatKindOfBean
+
 
 sorte = getSorte(featureReference, featureVector)
 
@@ -341,4 +362,47 @@ for index in range(len(sorte)):
         )
     else:
         print('diese Sorte gibt es nicht')
+fig.show()
+
+
+
+fig = px.imshow(img_in)
+# 3. Das Overlay als Scatter-Trace hinzufügen
+
+fig.add_trace(
+    go.Scatter(
+        x=centerOfRegions[sorte == 0,1],
+        y=centerOfRegions[sorte == 0,0],
+        mode='markers+text',
+        marker=dict(size=14, color='red', symbol='cross'),
+        textposition='middle center',
+        name='Kidney-Bohne2',
+        showlegend = True
+    )
+)
+
+fig.add_trace(
+    go.Scatter(
+        x=centerOfRegions[sorte == 1,1],
+        y=centerOfRegions[sorte == 1,0],
+        mode='markers+text',
+        marker=dict(size=14, color='blue', symbol='star'),
+        textposition='middle center',
+        name='Weiße Bohne2',
+        showlegend = True
+    )
+)
+
+fig.add_trace(
+    go.Scatter(
+        x=centerOfRegions[sorte == 2,1],
+        y=centerOfRegions[sorte == 2,0],
+        mode='markers+text',
+        marker=dict(size=14, color='green', symbol='cross'),
+        textposition='middle center',
+        name='Kichererbse2',
+        showlegend = True
+    )
+)
+
 fig.show()
