@@ -14,12 +14,6 @@ import scipy
 from scipy.ndimage import uniform_filter
 
 
-def repeatErosion(img, repetitions):
-    eroded = img
-    for iter in range(repetitions):
-        eroded = skimage.morphology.isotropic_erosion(eroded, radius = 5)
-
-    return eroded
 
 def getAverageIntensityValue(image, mask):
     noOfRegions = np.max(mask)+1
@@ -59,7 +53,8 @@ def getElipticity(imageLabeled):
 def buildFeatureVector(image, imageLabeled):
     ellipticityInRegion = getElipticity(imageLabeled)
     avIntInRegion = getAverageIntensityValue(image, imageLabeled)
-    featureVector = np.hstack((avIntInRegion_scaled[:,np.newaxis], ellipticityInRegion[:,np.newaxis]))
+    avIntInRegion = avIntInRegion/255
+    featureVector = np.hstack((avIntInRegion[:,np.newaxis], ellipticityInRegion[:,np.newaxis]))
     return featureVector
     
     
@@ -77,6 +72,59 @@ def getSorte(featReference, featureVector):
     return whatKindOfBean
 
 
+def imagePreprocessing(img):
+    img = uniform_filter(img, size=(25, 25, 1))
+    return img
+
+
+def seperateGreenBkg(img_hsv, low, high):
+
+    mask_hue = 1-((img_hsv[:,:,0]>low[0])&(img_hsv[:,:,0]<high[0]))
+    
+    mask_sat = 1-((img_hsv[:,:,1]>low[1])&(img_hsv[:,:,1]<high[1]))
+    
+    mask_val = ((img_hsv[:,:,2]>low[2])&(img_hsv[:,:,2]<high[2]))
+    
+    mask =(mask_hue & mask_sat & mask_val)
+    mask=mask.astype('uint8')
+
+    '''
+    mask = cv2.inRange(img_hsv, low, high, )
+    der obige code funktioniert nicht mit einem einzigen cv2.inRange befehl.
+    '''
+    return mask
+
+
+def watershedSegmentation(mask):
+    kernel = skimage.morphology.disk(5)
+    
+    #mask = cv2.erode(mask, kernel, iterations=5)
+    
+    distance = scipy.ndimage.distance_transform_edt(mask > 0)
+    
+    # 2. Lokale Maxima (Kerne der getrennten Objekte) finden
+    coords = skimage.feature.peak_local_max(distance, footprint=np.ones((155, 155)),threshold_abs
+                                                                                =50, min_distance=150, labels = mask )
+    markers_mask = np.zeros(distance.shape, dtype=bool)
+    markers_mask[tuple(coords.T)] = True
+    markers, _ = scipy.ndimage.label(markers_mask)
+    
+    # 3. Watershed anwenden, um die Brücke zu schneiden
+    segments = skimage.segmentation.watershed(-distance, markers, mask=(mask > 0))
+    
+    return segments
+
+def imageSegmentation(mask):
+
+    #segments = watershedSegmentation(mask)
+    #segments = skimage.measure.label(mask)
+    segments = cv2.connectedComponents(mask)[1]
+    return segments
+    
+
+####
+### Read Image
+####
 
 
 #img = skimage.io.imread(r'img/beans/KidneyBeans.jpg', False)
@@ -84,25 +132,29 @@ def getSorte(featReference, featureVector):
 img = skimage.io.imread(r'img/beans/AllBeans1.jpg', False)
 #img = skimage.io.imread(r'img/beans/many2.jpg', False)
 
-fig = px.imshow(img)
-fig.show()
-
-
-
-# preprocess image Gaussian blur
 img_in = img
-img = uniform_filter(img, size=(25, 25, 1))
 
-
+## Show Image
 fig = px.imshow(img)
 fig.show()
 
-#change color to hsv
 
-#img_hsv = skimage.color.rgb2hsv(img)
+####
+# Image Preprocessing
+####
+img = imagePreprocessing(img)
+
+## Show Image
+fig = px.imshow(img)
+fig.show()
+
+
+####
+# Main Image Processing
+####
 img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
 
-
+## Show Image
 fig = px.imshow(img_hsv)
 fig.update_traces(
     hovertemplate="<br>".join([
@@ -118,79 +170,106 @@ fig.update_traces(
 fig.show()
 
 
+# seperate foreground and background
+low = np.array([20,200,40])
+high = np.array([105, 255, 255])
+mask = seperateGreenBkg(img_hsv, low, high)
 
 
-
-
-
-# cut out color range of interest
-img_hue = img_hsv[:,:,0]
-img_sat = img_hsv[:,:,1]
-img_val = img_hsv[:,:,2]
-
-# filter hue sat Value
-
-
-
-#hue_low = 70
-hue_low = 20
-hue_high = 105
-
-sat_low = 200
-sat_high = 255
-
-val_low = 40
-val_high = 255
-
-
-mask_hue = 1-((img_hsv[:,:,0]>hue_low)&(img_hsv[:,:,0]<hue_high))
-
-mask_sat = 1-((img_hsv[:,:,1]>sat_low)&(img_hsv[:,:,1]<sat_high))
-
-mask_val = ((img_hsv[:,:,2]>=val_low)&(val_high>=img_hsv[:,:,2]))
-
-
-
-mask =(mask_hue & mask_sat & mask_val)
-mask=mask.astype('uint8')
-
+# clean regions
 footprint = skimage.morphology.disk(5)
 mask = skimage.morphology.opening(mask, footprint)
 mask = skimage.morphology.closing(mask, footprint)
 
-
 fig = px.imshow(mask)
 fig.show()
 
+# image segmentation
 
-kernel = skimage.morphology.disk(5)
+img_Labeled = imageSegmentation(mask)
 
-#mask = cv2.erode(mask, kernel, iterations=5)
+fig = px.imshow(img_Labeled, color_continuous_scale="Viridis")
+fig.show()
 
+# Zentren der jeweiligen Regionen berechnen
+centerOfRegions = calculateAllCentroids(img_Labeled)
 
-distance = scipy.ndimage.distance_transform_edt(mask > 0)
+# Mittlere Helligkeit der jeweiligen Region
+avIntInRegion = getAverageIntensityValue(img_hsv[:,:,2],img_Labeled)
 
-# 2. Lokale Maxima (Kerne der getrennten Objekte) finden
-coords = skimage.feature.peak_local_max(distance, footprint=np.ones((155, 155)),threshold_abs
-                                                                            =50, min_distance=150, labels = mask )
-markers_mask = np.zeros(distance.shape, dtype=bool)
-markers_mask[tuple(coords.T)] = True
-markers, _ = scipy.ndimage.label(markers_mask)
-
-# 3. Watershed anwenden, um die Brücke zu schneiden
-labels = skimage.segmentation.watershed(-distance, markers, mask=(mask > 0))
-
-# jetzt hat man die Bohnen erkannt
-
-centerOfRegions = calculateAllCentroids(labels)
-
-# Jetzt will man die Bohnensorte abtrennen.
-avIntInRegion = getAverageIntensityValue(img_hsv[:,:,2],labels)
 
 
 # Ellitizität der Bereiche bestimmen
-ellipticityInRegion = getElipticity(labels)
+ellipticityInRegion = getElipticity(img_Labeled)
 
+
+
+## build featureVector
+
+featureVector = buildFeatureVector(img_hsv[:,:,2], img_Labeled)
+
+## build Feature Reference
+
+featureBean = np.array([0.3, 0.5])
+featureWhiteBean = np.array([0.8, 0.5])
+featureChickPea = np.array([0.8, 0.08])
+
+featureReference=np.vstack((featureBean[np.newaxis,:],
+                            featureWhiteBean[np.newaxis,:],
+                            featureChickPea[np.newaxis,:]))
+
+
+sorte = getSorte(featureReference, featureVector)
+
+
+
+fig = px.imshow(img_in)
+# 3. Das Overlay als Scatter-Trace hinzufügen
+
+fig.add_trace(
+    go.Scatter(
+        x=centerOfRegions[sorte == 0,1],
+        y=centerOfRegions[sorte == 0,0],
+        mode='markers+text',
+        marker=dict(size=14, color='red', symbol='cross'),
+        textposition='middle center',
+        name='Kidney-Bohne',
+        showlegend = True
+    )
+)
+
+fig.add_trace(
+    go.Scatter(
+        x=centerOfRegions[sorte == 1,1],
+        y=centerOfRegions[sorte == 1,0],
+        mode='markers+text',
+        marker=dict(size=14, color='blue', symbol='star'),
+        textposition='middle center',
+        name='Weiße Bohne',
+        showlegend = True
+    )
+)
+
+fig.add_trace(
+    go.Scatter(
+        x=centerOfRegions[sorte == 2,1],
+        y=centerOfRegions[sorte == 2,0],
+        mode='markers+text',
+        marker=dict(size=14, color='green', symbol='cross'),
+        textposition='middle center',
+        name='Kichererbse',
+        showlegend = True
+    )
+)
+
+fig.show()
+
+
+
+
+######
+######
+'''
 isRegionDark = avIntInRegion<140
 isRegionBright = avIntInRegion >140
 isRegionRound = ellipticityInRegion < 0.35
@@ -202,35 +281,6 @@ isChickpea = isRegionBright & isRegionRound
 posBeanRed = centerOfRegions[isRedBean,:]
 posBeanWhite = centerOfRegions[isWhiteBean,:]
 posChickpea = centerOfRegions[isChickpea,:]
-
-# Show original image with overlay
-fig = px.imshow(img_hue)
-# 3. Das Overlay als Scatter-Trace hinzufügen
-fig.add_trace(
-    go.Scatter(
-        x=posBeanRed[:,1],
-        y=posBeanRed[:,0],
-        mode='markers+text',
-        marker=dict(size=14, color='red', symbol='cross'),
-        textposition='top center',
-        name='Schwerpunkte'
-    )
-)
-
-
-fig.add_trace(
-    go.Scatter(
-        x=posBeanWhite[:,1],
-        y=posBeanWhite[:,0],
-        mode='markers+text',
-        marker=dict(size=14, color='blue', symbol='cross'),
-        textposition='top center',
-        name='Schwerpunkte'
-    )
-)
-
-
-fig.show()
 
 
 # Show original image with overlay
@@ -284,125 +334,4 @@ fig.update_layout(
 
 
 fig.show()
-
-
-
-
-## build featureVector
-
-avIntInRegion_scaled = avIntInRegion/255
-featureVector2 = np.hstack((avIntInRegion_scaled[:,np.newaxis], ellipticityInRegion[:,np.newaxis]))
-
-featureVector = buildFeatureVector(img_hsv[:,:,2], labels)
-
-
-
-
-featureBean = np.array([0.3, 0.5])
-featureWhiteBean = np.array([0.8, 0.5])
-featureChickPea = np.array([0.8, 0.08])
-
-featureReference=np.vstack((featureBean[np.newaxis,:],
-                            featureWhiteBean[np.newaxis,:],
-                            featureChickPea[np.newaxis,:]))
-
-iRegion = 1
-regionToTest = featureVector[iRegion,:]
-
-diff = featureReference-regionToTest
-distance = np.linalg.norm(diff, axis=1)
-
-objectNumber = np.argmin(distance)
-
-
-
-sorte = getSorte(featureReference, featureVector)
-
-fig = px.imshow(img_in)
-# 3. Das Overlay als Scatter-Trace hinzufügen
-for index in range(len(sorte)):
-    index=int(index)
-    if sorte[index] == 0:
-        fig.add_trace(
-            go.Scatter(
-                x=np.array([centerOfRegions[index,1]]),
-                y=np.array([centerOfRegions[index,0]]),
-                mode='markers+text',
-                marker=dict(size=14, color='red', symbol='cross'),
-                textposition='middle center',
-                name='Kidney-Bohne2',
-                showlegend = True
-            )
-        )
-    #####
-    elif sorte[index]==1:
-        fig.add_trace(
-            go.Scatter(
-                x=np.array([centerOfRegions[index,1]]),
-                y=np.array([centerOfRegions[index,0]]),
-                mode='markers+text',
-                marker=dict(size=14, color='blue', symbol='star'),
-                textposition='middle center',
-                name='Weiße Bohne2',
-                showlegend = True
-            )
-        )
-    #########
-    elif sorte[index]==2:
-        fig.add_trace(
-            go.Scatter(
-                x=np.array([centerOfRegions[index,1]]),
-                y=np.array([centerOfRegions[index,0]]),
-                mode='markers+text',
-                marker=dict(size=14, color='green', symbol='cross'),
-                textposition='middle center',
-                name='Kichererbse2',
-                showlegend = True
-            )
-        )
-    else:
-        print('diese Sorte gibt es nicht')
-fig.show()
-
-
-
-fig = px.imshow(img_in)
-# 3. Das Overlay als Scatter-Trace hinzufügen
-
-fig.add_trace(
-    go.Scatter(
-        x=centerOfRegions[sorte == 0,1],
-        y=centerOfRegions[sorte == 0,0],
-        mode='markers+text',
-        marker=dict(size=14, color='red', symbol='cross'),
-        textposition='middle center',
-        name='Kidney-Bohne2',
-        showlegend = True
-    )
-)
-
-fig.add_trace(
-    go.Scatter(
-        x=centerOfRegions[sorte == 1,1],
-        y=centerOfRegions[sorte == 1,0],
-        mode='markers+text',
-        marker=dict(size=14, color='blue', symbol='star'),
-        textposition='middle center',
-        name='Weiße Bohne2',
-        showlegend = True
-    )
-)
-
-fig.add_trace(
-    go.Scatter(
-        x=centerOfRegions[sorte == 2,1],
-        y=centerOfRegions[sorte == 2,0],
-        mode='markers+text',
-        marker=dict(size=14, color='green', symbol='cross'),
-        textposition='middle center',
-        name='Kichererbse2',
-        showlegend = True
-    )
-)
-
-fig.show()
+'''
