@@ -116,9 +116,9 @@ def watershedSegmentation(mask):
 
 def imageSegmentation(mask):
 
-    #segments = watershedSegmentation(mask)
+    segments = watershedSegmentation(mask)
     #segments = skimage.measure.label(mask)
-    segments = cv2.connectedComponents(mask)[1]
+    #segments = cv2.connectedComponents(mask)[1]
     return segments
     
 
@@ -177,12 +177,9 @@ mask = seperateGreenBkg(img_hsv, low, high)
 
 
 # clean regions
-footprint = skimage.morphology.disk(5)
-mask = skimage.morphology.opening(mask, footprint)
-mask = skimage.morphology.closing(mask, footprint)
-
-fig = px.imshow(mask)
-fig.show()
+footprint = skimage.morphology.disk(25)
+mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, footprint)
+mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, footprint)
 
 # image segmentation
 
